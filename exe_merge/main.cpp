@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <thread>
 #include <iostream>
 #include <shlwapi.h>  // PathCombine
 
@@ -123,26 +124,29 @@ bool LaunchExeFromMemory(const std::vector<BYTE>& exeBytes) {
     return true;
 }
 
+// Thread entry point function to launch the embedded EXE
+void ThreadLaunchExe(const std::vector<BYTE>& exeBytes, const std::wstring& name) {
+    if (!LaunchExeFromMemory(exeBytes)) {
+        std::wcerr << L"Failed to launch " << name << std::endl;
+        MessageBox(NULL, (L"Failed to launch " + name).c_str(), TEXT("Error"), MB_ICONERROR);
+    }
+}
+
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     auto exeA = LoadEmbeddedExe(IDR_MAIN_EXE);
     auto exeB = LoadEmbeddedExe(IDR_SECOND_EXE);
     if (exeA.empty() || exeB.empty()) {
-        MessageBox(NULL, TEXT("Failed to load resources"), TEXT("Error"), MB_ICONERROR);
+        MessageBox(NULL, TEXT("Failed to load embedded resources"), TEXT("Error"), MB_ICONERROR);
         return -1;
     }
 
-    if (!LaunchExeFromMemory(exeA)) {
-        MessageBox(NULL, TEXT("Failed to launch A.exe"), TEXT("Error"), MB_ICONERROR);
-        return -2;
-    }
+    // Launch A.exe and B.exe concurrently in separate threads
+    std::thread threadA(ThreadLaunchExe, exeA, L"A.exe");
+    std::thread threadB(ThreadLaunchExe, exeB, L"B.exe");
 
-    // Delay (modify here if needed)
-    Sleep(2000);
-
-    if (!LaunchExeFromMemory(exeB)) {
-        MessageBox(NULL, TEXT("Failed to launch B.exe"), TEXT("Error"), MB_ICONERROR);
-        return -3;
-    }
+    // Wait for both threads to complete
+    threadA.join();
+    threadB.join();
 
     return 0;
 }
