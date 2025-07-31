@@ -1,0 +1,7 @@
+#include "resource.h"
+IDR_MAIN_EXE   RCDATA  "A.exe"
+IDR_SECOND_EXE RCDATA  "B.exe"
+#ifndef IDC_STATIC
+#define IDC_STATIC (-1)
+#endif
+1 24 "exe_merge.exe.intermediate.manifest"
